@@ -309,6 +309,7 @@
         </div>
         <div class="header-right">
             <div class="header-stats">
+                <div class="stat-badge">👤 {{ Auth::user()->name }}</div>
             </div>
         </div>
     </div>
