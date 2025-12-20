@@ -17,14 +17,21 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        // User::factory()->create([
-        //     'name' => 'Test User',
-        //     'email' => 'test@example.com',
-        //     'password' => 'password'
-        // ]);
+        User::factory()->create([
+            'name' => 'Admin',
+            'email' => 'admin@example.com',
+            'password' => 'password'
+        ]);
 
         $this->call([
-            BankSeeder::class
+            BankSeeder::class,
+            DriverSeeder::class,
+            CheckPointSeeder::class,
+            UnitTruckSeeder::class,
+            BiayaRuteSeeder::class,
+            DriverMoneySeeder::class,
+            DriverRequestSeeder::class,
+            DriverLogActivitySeeder::class,
         ]);
     }
 }

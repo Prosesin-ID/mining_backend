@@ -325,13 +325,7 @@
 <div class="dashboard-grid">
     <div class="stat-card">
         <div class="stat-label">Total Unit</div>
-        <div class="stat-value">24</div>
-        <div class="stat-change">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M7 14l5-5 5 5z"/>
-            </svg>
-            +2 hari ini
-        </div>
+        <div class="stat-value">{{ $trucks }}</div>
         <div class="stat-icon">
             <svg viewBox="0 0 24 24">
                 <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4z"/>
@@ -341,13 +335,7 @@
 
     <div class="stat-card">
         <div class="stat-label">Checkpoints</div>
-        <div class="stat-value">12</div>
-        <div class="stat-change">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M7 14l5-5 5 5z"/>
-            </svg>
-            +1 hari ini
-        </div>
+        <div class="stat-value">{{ $checkpoints }}</div>
         <div class="stat-icon">
             <svg viewBox="0 0 24 24">
                 <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
@@ -357,7 +345,7 @@
 
     <div class="stat-card">
         <div class="stat-label">On Location</div>
-        <div class="stat-value">18</div>
+        <div class="stat-value">{{ $onLocationDrivers }}</div>
         <div class="stat-icon">
             <svg viewBox="0 0 24 24">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
@@ -367,7 +355,7 @@
 
     <div class="stat-card">
         <div class="stat-label">Maintenance</div>
-        <div class="stat-value">2</div>
+        <div class="stat-value">{{ $maintenanceTrucks }}</div>
         <div class="stat-icon">
             <svg viewBox="0 0 24 24">
                 <path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/>
@@ -392,75 +380,26 @@
         </div>
 
         <div class="activity-list">
+            @foreach($logs as $log)
             <div class="activity-item">
                 <div class="activity-info">
                     <div class="activity-status"></div>
                     <div class="activity-details">
-                        <h4>B 1234 ABC</h4>
-                        <p>Ahmad Surya • Gudang Utama</p>
+                        <h4>{{ $log->driver->unitTruck->plate_number }}</h4>
+                        <p>{{ $log->driver->name }} • {{ $log->checkPoint->name }}</p>
                     </div>
                 </div>
                 <div style="display: flex; align-items: center;">
+                    @if($log->last_activity === 'check_in')
                     <span class="activity-badge">CHECK-IN</span>
-                    <span class="activity-time">10:30</span>
-                </div>
-            </div>
-
-            <div class="activity-item">
-                <div class="activity-info">
-                    <div class="activity-status" style="background: #ef4444;"></div>
-                    <div class="activity-details">
-                        <h4>B 5678 DEF</h4>
-                        <p>Budi Santoso • Quarry Cikarang</p>
-                    </div>
-                </div>
-                <div style="display: flex; align-items: center;">
+                    <span class="activity-time">{{ \Carbon\Carbon::parse($log->check_In)->format('H:i') }}</span>
+                    @else
                     <span class="activity-badge checkout">CHECK-OUT</span>
-                    <span class="activity-time">10:25</span>
+                    <span class="activity-time">{{ \Carbon\Carbon::parse($log->check_Out)->format('H:i') }}</span>
+                    @endif
                 </div>
             </div>
-
-            <div class="activity-item">
-                <div class="activity-info">
-                    <div class="activity-status"></div>
-                    <div class="activity-details">
-                        <h4>B 9012 GHI</h4>
-                        <p>Candra Wijaya • Terminal B</p>
-                    </div>
-                </div>
-                <div style="display: flex; align-items: center;">
-                    <span class="activity-badge">CHECK-IN</span>
-                    <span class="activity-time">10:20</span>
-                </div>
-            </div>
-
-            <div class="activity-item">
-                <div class="activity-info">
-                    <div class="activity-status" style="background: #ef4444;"></div>
-                    <div class="activity-details">
-                        <h4>B 3456 JKL</h4>
-                        <p>Dedi Kurniawan • Gudang Utama</p>
-                    </div>
-                </div>
-                <div style="display: flex; align-items: center;">
-                    <span class="activity-badge checkout">CHECK-OUT</span>
-                    <span class="activity-time">10:15</span>
-                </div>
-            </div>
-
-            <div class="activity-item">
-                <div class="activity-info">
-                    <div class="activity-status"></div>
-                    <div class="activity-details">
-                        <h4>B 7890 MNO</h4>
-                        <p>Eko Prasetyo • Quarry Bogor</p>
-                    </div>
-                </div>
-                <div style="display: flex; align-items: center;">
-                    <span class="activity-badge">CHECK-IN</span>
-                    <span class="activity-time">10:10</span>
-                </div>
-            </div>
+            @endforeach
         </div>
     </div>
 
@@ -475,19 +414,19 @@
         <div class="status-list">
             <div class="status-item">
                 <span>On Location</span>
-                <span class="status-count" style="color: #4ade80;">18</span>
+                <span class="status-count" style="color: #4ade80;">{{ $onLocationDrivers }}</span>
             </div>
             <div class="status-item">
                 <span>Belum Check-Out</span>
-                <span class="status-count" style="color: #f59e0b;">4</span>
+                <span class="status-count" style="color: #f59e0b;">{{ $notCheckOutDrivers }}</span>
             </div>
             <div class="status-item">
                 <span>Maintenance</span>
-                <span class="status-count" style="color: #ef4444;">2</span>
+                <span class="status-count" style="color: #ef4444;">{{ $maintenanceTrucks }}</span>
             </div>
             <div class="status-item">
                 <span>Completed</span>
-                <span class="status-count" style="color: #3b82f6;">1</span>
+                <span class="status-count" style="color: #3b82f6;">{{ $completedDrivers }}</span>
             </div>
         </div>
     </div>
@@ -502,20 +441,13 @@
             </svg>
             <h3>UNIT MAINTENANCE</h3>
         </div>
-
+        @foreach ($mtTruckDatas as $mt)
         <div class="maintenance-item">
-            <h4>B 2468 PQR</h4>
-            <div class="maintenance-meta">Sejak 09:00 • Fajar Hidayat</div>
-            <div class="maintenance-meta">Lokasi: Gudang Utama</div>
-            <div class="maintenance-reason">Alasan: Ganti oli dan servis rutin</div>
+            <h4>{{ $mt->plate_number }}</h4>
+            <div class="maintenance-meta">Sejak {{ \Carbon\Carbon::parse($mt->maintenance_start_time)->format('H:i') }} • {{ $mt->driver->name }}</div>
+            <div class="maintenance-reason">Alasan: {{ $mt->reason_maintenance }}</div>
         </div>
-
-        <div class="maintenance-item">
-            <h4>B 1357 STU</h4>
-            <div class="maintenance-meta">Sejak 08:30 • Gilang Ramadhan</div>
-            <div class="maintenance-meta">Lokasi: Pool Cikarang</div>
-            <div class="maintenance-reason">Alasan: Perbaikan rem</div>
-        </div>
+        @endforeach
     </div>
 
     <div class="map-card">

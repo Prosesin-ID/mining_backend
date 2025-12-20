@@ -13,6 +13,9 @@ class UnitTruck extends Model
         'driver_id',
         'bank_account_number',
         'status',
+        'reason_maintenance',
+        'maintenance_start_time',
+        'maintenance_end_time',
     ];
 
     public function bank()

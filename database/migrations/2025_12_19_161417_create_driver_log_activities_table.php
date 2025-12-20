@@ -14,10 +14,11 @@ return new class extends Migration
         Schema::create('driver_log_activities', function (Blueprint $table) {
             $table->id();
             $table->foreignId('driver_id')->constrained('drivers')->onDelete('cascade');
-            $table->foreignId('checkpoint_id')->constrained('check_points')->onDelete('cascade');
+            $table->foreignId('check_point_id')->constrained('check_points')->onDelete('cascade');
             $table->enum('status', ['on_location', 'selesai']);
             $table->string('check_In');
             $table->string('check_Out')->nullable();
+            $table->enum('last_activity', ['check_in', 'check_out'])->nullable();
             $table->timestamps();
         });
     }

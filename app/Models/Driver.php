@@ -12,7 +12,9 @@ class Driver extends Authenticatable
         'email',
         'password',
         'phone',
-        'license_number',
+        'own_type',
+        'nama_pemilik',
+        'status',
     ];
 
     protected $hidden = [
