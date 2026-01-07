@@ -461,22 +461,231 @@
         </div>
 
         <div class="map-card">
-            <div class="card-header" style="border: none; padding-bottom: 0;">
+            <div class="card-header" style="border: none; padding-bottom: 10px; margin-bottom: 0;">
                 <svg viewBox="0 0 24 24">
                     <path
                         d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z" />
                 </svg>
                 <h3>PETA MONITORING</h3>
             </div>
-            <div class="map-placeholder">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path
-                        d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z" />
-                </svg>
-                <p>Map View akan ditampilkan di sini</p>
-                <small>Koneksikan dengan Lovable Cloud untuk fitur peta</small>
-            </div>
+            <div id="map" style="width: 100%; height: 350px; border-radius: 8px;"></div>
         </div>
     </div>
+
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_MAPS_API_KEY') }}"></script>
+    <script>
+        let map;
+        let markers = {};
+        let userLocation = null;
+
+        // Initialize map
+        function initMap() {
+            // Default center (Indonesia)
+            const defaultCenter = { lat: -2.5489, lng: 118.0149 };
+            
+            // Try to get user's current location
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        userLocation = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        console.log('📍 User location detected:', userLocation);
+                        
+                        // Initialize map with user location
+                        createMap(userLocation);
+                        
+                        // Add user location marker
+                        new google.maps.Marker({
+                            position: userLocation,
+                            map: map,
+                            title: 'Lokasi Anda',
+                            icon: {
+                                path: google.maps.SymbolPath.CIRCLE,
+                                scale: 8,
+                                fillColor: '#3b82f6',
+                                fillOpacity: 1,
+                                strokeColor: '#fff',
+                                strokeWeight: 2
+                            }
+                        });
+                    },
+                    (error) => {
+                        console.warn('⚠️ Could not get user location:', error.message);
+                        createMap(defaultCenter);
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 5000,
+                        maximumAge: 0
+                    }
+                );
+            } else {
+                console.warn('⚠️ Geolocation not supported');
+                createMap(defaultCenter);
+            }
+        }
+
+        function createMap(center) {
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: center,
+                zoom: userLocation ? 12 : 5,
+                styles: [
+                    {
+                        "featureType": "all",
+                        "elementType": "geometry",
+                        "stylers": [{"color": "#242f3e"}]
+                    },
+                    {
+                        "featureType": "all",
+                        "elementType": "labels.text.stroke",
+                        "stylers": [{"color": "#242f3e"}]
+                    },
+                    {
+                        "featureType": "all",
+                        "elementType": "labels.text.fill",
+                        "stylers": [{"color": "#746855"}]
+                    },
+                    {
+                        "featureType": "water",
+                        "elementType": "geometry",
+                        "stylers": [{"color": "#17263c"}]
+                    }
+                ]
+            });
+
+            // Load initial markers
+            updateMarkers();
+        }
+
+        // Update markers from API
+        async function updateMarkers() {
+            try {
+                const response = await fetch('{{ route('location.active') }}');
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    console.log(`📍 Loaded ${result.count} active driver locations`);
+                    
+                    // Clear old markers that no longer exist
+                    const currentDriverIds = result.data.map(d => d.driver_id);
+                    for (const driverId in markers) {
+                        if (!currentDriverIds.includes(parseInt(driverId))) {
+                            markers[driverId].marker.setMap(null);
+                            markers[driverId].label.setMap(null);
+                            delete markers[driverId];
+                        }
+                    }
+                    
+                    // Add or update markers
+                    result.data.forEach(driver => {
+                        const position = {
+                            lat: driver.latitude,
+                            lng: driver.longitude
+                        };
+                        
+                        if (markers[driver.driver_id]) {
+                            // Update existing marker position
+                            markers[driver.driver_id].marker.setPosition(position);
+                            markers[driver.driver_id].label.setPosition(position);
+                        } else {
+                            // Marker color: gold if checked in, orange if not
+                            const markerColor = driver.is_checked_in ? '#D4AF37' : '#f59e0b';
+                            
+                            // Create new marker with label
+                            const marker = new google.maps.Marker({
+                                position: position,
+                                map: map,
+                                title: driver.plate_number,
+                                icon: {
+                                    path: google.maps.SymbolPath.CIRCLE,
+                                    scale: 10,
+                                    fillColor: markerColor,
+                                    fillOpacity: 1,
+                                    strokeColor: '#fff',
+                                    strokeWeight: 2
+                                }
+                            });
+                            
+                            // Add label above marker
+                            const label = new google.maps.Marker({
+                                position: position,
+                                map: map,
+                                icon: {
+                                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="120" height="30">
+                                            <rect width="120" height="30" rx="15" fill="${markerColor}" opacity="0.9"/>
+                                            <text x="60" y="20" font-family="Arial" font-size="12" font-weight="bold" 
+                                                  fill="#000" text-anchor="middle">${driver.driver_name}</text>
+                                        </svg>
+                                    `),
+                                    anchor: new google.maps.Point(60, 45),
+                                    labelOrigin: new google.maps.Point(60, 15)
+                                }
+                            });
+                            
+                            // Info window
+                            const infoWindow = new google.maps.InfoWindow({
+                                content: `
+                                    <div style="color: #000; padding: 10px;">
+                                        <h4 style="margin: 0 0 8px 0; color: #D4AF37;">${driver.plate_number}</h4>
+                                        <p style="margin: 4px 0;"><strong>Driver:</strong> ${driver.driver_name}</p>
+                                        <p style="margin: 4px 0;"><strong>Checkpoint:</strong> ${driver.checkpoint_name}</p>
+                                        <p style="margin: 4px 0; font-size: 12px; color: #666;">
+                                            <strong>Check-in:</strong> ${new Date(driver.check_in_time).toLocaleTimeString('id-ID')}
+                                        </p>
+                                    </div>
+                                `
+                            });
+                            
+                            marker.addListener('click', () => {
+                                // Close all other info windows
+                                for (const id in markers) {
+                                    if (markers[id].infoWindow) {
+                                        markers[id].infoWindow.close();
+                                    }
+                                }
+                                infoWindow.open(map, marker);
+                            });
+                            
+                            markers[driver.driver_id] = {
+                                marker: marker,
+                                label: label,
+                                infoWindow: infoWindow
+                            };
+                        }
+                    });
+                    
+                    // Auto-fit bounds if there are markers
+                    if (result.data.length > 0) {
+                        const bounds = new google.maps.LatLngBounds();
+                        result.data.forEach(driver => {
+                            bounds.extend({
+                                lat: driver.latitude,
+                                lng: driver.longitude
+                            });
+                        });
+                        map.fitBounds(bounds);
+                        
+                        // Don't zoom in too much
+                        google.maps.event.addListenerOnce(map, 'bounds_changed', function() {
+                            if (this.getZoom() > 15) {
+                                this.setZoom(15);
+                            }
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Error loading driver locations:', error);
+            }
+        }
+
+        // Initialize on page load
+        window.onload = initMap;
+        
+        // Auto-refresh every 30 seconds
+        setInterval(updateMarkers, 30000);
+    </script>
 
 @endsection

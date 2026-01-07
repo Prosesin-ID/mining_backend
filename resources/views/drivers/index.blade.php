@@ -688,7 +688,7 @@
                     </div>
                 </td>
                 <td>
-                    <span class="unit-badge">TRK-{{ str_pad($driver->id, 3, '0', STR_PAD_LEFT) }}</span>
+                    <span class="unit-badge">{{ $driver->unitTruck->no_unit }}</span>
                 </td>
                 <td>
                     <span class="status-badge {{ $driver->status }}">

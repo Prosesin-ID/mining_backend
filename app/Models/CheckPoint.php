@@ -19,4 +19,9 @@ class CheckPoint extends Model
     {
         return $this->hasMany(DriverLogActivity::class);
     }
+
+    public function checkoutActivities()
+    {
+        return $this->hasMany(CheckoutActivity::class);
+    }
 }

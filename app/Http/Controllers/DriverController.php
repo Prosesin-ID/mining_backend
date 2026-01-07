@@ -12,7 +12,7 @@ class DriverController extends Controller
      */
     public function index()
     {
-        $drivers = Driver::all();
+        $drivers = Driver::with('unitTruck')->get();
         return view('drivers.index', compact('drivers'));
     }
 

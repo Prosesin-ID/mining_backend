@@ -10,6 +10,12 @@ class DriverRequest extends Model
         'request_type',
         'amount',
         'driver_id',
+        'status',
+        'notes',
+    ];
+
+    protected $casts = [
+        'amount' => 'decimal:2',
     ];
 
     public function driver()

@@ -10,6 +10,7 @@ use App\Http\Controllers\CheckPointController;
 use App\Http\Controllers\DriverMoneyController;
 use App\Http\Controllers\DriverRequestController;
 use App\Http\Controllers\DriverLogActivityController;
+use App\Http\Controllers\Api\LocationTrackingController;
 
 Route::get('/', function () {
     return view('auth.login');
@@ -46,5 +47,8 @@ Route::middleware(['validate.user'])->group(function () {
     Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan.index');
     Route::get('/laporan/export-pdf', [LaporanController::class, 'exportPdf'])->name('laporan.export.pdf');
     Route::get('/laporan/export-excel', [LaporanController::class, 'exportExcel'])->name('laporan.export.excel');
+    
+    // Location tracking for map
+    Route::get('/api/location/active', [LocationTrackingController::class, 'getActiveLocations'])->name('location.active');
 
 });

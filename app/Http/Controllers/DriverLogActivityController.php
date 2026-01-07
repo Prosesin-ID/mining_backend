@@ -12,7 +12,9 @@ class DriverLogActivityController extends Controller
      */
     public function index()
     {
-        $logs = DriverLogActivity::with(['driver.unitTruck', 'checkPoint'])->get();
+        $logs = DriverLogActivity::with(['driver.unitTruck', 'checkPoint'])
+            ->latest()
+            ->get();
         return view('driver_log_activities.index', compact('logs'));
     }
 

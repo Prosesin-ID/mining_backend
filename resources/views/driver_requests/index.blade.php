@@ -402,17 +402,7 @@
                 </svg>
             </div>
             <div class="stat-label">Pending Approval</div>
-            <div class="stat-value">{{ $driverRequests->count() }} Request</div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-icon red">
-                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-                </svg>
-            </div>
-            <div class="stat-label">Pending Pemotongan</div>
-            <div class="stat-value">Rp {{ number_format($driverRequests->where('request_type', 'pemotongan')->sum('amount'), 0, ',', '.') }}</div>
+            <div class="stat-value">{{ $pendingCount }} Request</div>
         </div>
 
         <div class="stat-card">
@@ -421,8 +411,18 @@
                     <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
                 </svg>
             </div>
-            <div class="stat-label">Rute Terdaftar</div>
-            <div class="stat-value">{{ \App\Models\BiayaRute::count() }} Rute</div>
+            <div class="stat-label">Approved</div>
+            <div class="stat-value">{{ $approvedCount }} Request</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon red">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                </svg>
+            </div>
+            <div class="stat-label">Rejected</div>
+            <div class="stat-value">{{ $rejectedCount }} Request</div>
         </div>
     </div>
 
@@ -433,10 +433,29 @@
         </a>
         <a href="{{ route('driver_requests.index') }}" class="tab-link active">
             Approval Request
-            <span class="tab-badge">{{ $driverRequests->count() }}</span>
+            <span class="tab-badge">{{ $pendingCount }}</span>
         </a>
         <a href="{{ route('biaya_rute.index') }}" class="tab-link">
             Biaya Rute
+        </a>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="balance-tabs" style="margin-top: -10px; margin-bottom: 20px; border-bottom: 1px solid #2a2a2a;">
+        <a href="{{ route('driver_requests.index', ['filter' => 'pending']) }}" class="tab-link {{ $filter === 'pending' ? 'active' : '' }}">
+            Pending
+            @if($pendingCount > 0)
+            <span class="tab-badge">{{ $pendingCount }}</span>
+            @endif
+        </a>
+        <a href="{{ route('driver_requests.index', ['filter' => 'approved']) }}" class="tab-link {{ $filter === 'approved' ? 'active' : '' }}">
+            Approved
+        </a>
+        <a href="{{ route('driver_requests.index', ['filter' => 'rejected']) }}" class="tab-link {{ $filter === 'rejected' ? 'active' : '' }}">
+            Rejected
+        </a>
+        <a href="{{ route('driver_requests.index', ['filter' => 'all']) }}" class="tab-link {{ $filter === 'all' ? 'active' : '' }}">
+            Semua
         </a>
     </div>
 
@@ -462,6 +481,19 @@
                             <span class="request-type-badge {{ $request->request_type }}">
                                 {{ $request->request_type == 'pemotongan' ? 'PEMOTONGAN' : 'TOP-UP' }}
                             </span>
+                            @if($request->status === 'approved')
+                            <span class="request-type-badge" style="background: rgba(0, 255, 0, 0.15); color: #00ff00;">
+                                ✓ APPROVED
+                            </span>
+                            @elseif($request->status === 'rejected')
+                            <span class="request-type-badge" style="background: rgba(255, 68, 68, 0.15); color: #ff4444;">
+                                ✗ REJECTED
+                            </span>
+                            @else
+                            <span class="request-type-badge" style="background: rgba(212, 175, 55, 0.15); color: #D4AF37;">
+                                ⏳ PENDING
+                            </span>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -472,7 +504,7 @@
                         <span class="detail-label">Biaya rute</span>
                         <span class="detail-value">
                             @php
-                                $routeInfo = json_decode($request->notes ?? '{}');
+                                // $routeInfo = json_decode($request->notes ?? '{}');
                                 echo $routeInfo->from ?? '-';
                             @endphp
                             →
@@ -507,6 +539,21 @@
                     </div>
                 </div>
 
+                @if($request->notes)
+                <div style="background: #1a1a1a; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; border-left: 3px solid {{ $request->status === 'approved' ? '#00ff00' : '#ff4444' }};">
+                    <div style="display: flex; align-items: start; gap: 10px;">
+                        <svg style="width: 16px; height: 16px; fill: #666; margin-top: 2px;" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                        </svg>
+                        <div style="flex: 1;">
+                            <div style="font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Catatan Admin</div>
+                            <div style="color: #ddd; font-size: 13px;">{{ $request->notes }}</div>
+                        </div>
+                    </div>
+                </div>
+                @endif
+
+                @if($request->status === 'pending')
                 <div class="request-actions">
                     <form action="{{ route('driver_requests.approve', $request->id) }}" method="POST" style="display: inline;">
                         @csrf
@@ -518,17 +565,21 @@
                             APPROVE
                         </button>
                     </form>
-                    <form action="{{ route('driver_requests.reject', $request->id) }}" method="POST" style="display: inline;">
-                        @csrf
-                        @method('PUT')
-                        <button type="submit" class="btn-reject" onclick="return confirm('Reject request ini?')">
-                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-                            </svg>
-                            REJECT
-                        </button>
-                    </form>
+                    <button type="button" class="btn-reject" onclick="showRejectModal({{ $request->id }})">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                        </svg>
+                        REJECT
+                    </button>
                 </div>
+                @else
+                <div style="text-align: right; color: #666; font-size: 12px; padding: 8px 0;">
+                    <svg style="width: 14px; height: 14px; fill: #666; vertical-align: middle;" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    Diproses pada {{ $request->updated_at->format('Y-m-d H:i') }}
+                </div>
+                @endif
             </div>
             @endforeach
         @else
@@ -542,6 +593,49 @@
         @endif
     </div>
 </div>
+
+<!-- Reject Modal -->
+<div id="rejectModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; align-items: center; justify-content: center;">
+    <div style="background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 30px; max-width: 500px; width: 90%;">
+        <h3 style="color: #fff; margin-bottom: 20px; font-size: 20px;">Reject Request</h3>
+        <form id="rejectForm" method="POST">
+            @csrf
+            @method('PUT')
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: #888; font-size: 13px; margin-bottom: 8px;">Alasan penolakan (opsional):</label>
+                <textarea name="notes" rows="4" style="width: 100%; background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 12px; color: #fff; font-size: 14px; font-family: inherit; resize: vertical;" placeholder="Masukkan alasan penolakan..."></textarea>
+            </div>
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button type="button" onclick="closeRejectModal()" style="padding: 10px 20px; background: transparent; border: 2px solid #555; color: #888; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                    Batal
+                </button>
+                <button type="submit" style="padding: 10px 20px; background: #ff4444; border: none; color: #fff; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                    Reject Request
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function showRejectModal(requestId) {
+    const modal = document.getElementById('rejectModal');
+    const form = document.getElementById('rejectForm');
+    form.action = '{{ route("driver_requests.reject", ":id") }}'.replace(':id', requestId);
+    modal.style.display = 'flex';
+}
+
+function closeRejectModal() {
+    document.getElementById('rejectModal').style.display = 'none';
+}
+
+// Close modal when clicking outside
+document.getElementById('rejectModal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeRejectModal();
+    }
+});
+</script>
 
 @if(session('success'))
 <div class="alert alert-success" style="position: fixed; top: 90px; right: 30px; z-index: 9999; background: #00ff00; color: #000; border: none; border-radius: 8px; padding: 16px 24px; font-weight: 600;">

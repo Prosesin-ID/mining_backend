@@ -36,12 +36,12 @@ class DriverAuthController extends Controller
         }
 
         // Check status driver
-        if ($driver->status !== 'active') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Akun Anda sedang ' . $driver->status . '. Hubungi admin.',
-            ], 403);
-        }
+        // if ($driver->status !== 'active') {
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'Akun Anda sedang ' . $driver->status . '. Hubungi admin.',
+        //     ], 403);
+        // }
 
         // Generate token
         $token = $driver->createToken('driver-mobile-app')->plainTextToken;
@@ -87,6 +87,18 @@ class DriverAuthController extends Controller
                 'nama_pemilik' => $driver->nama_pemilik,
                 'status' => $driver->status,
             ],
+        ], 200);
+    }
+
+    public function turnOffStatus(Request $request)
+    {
+        $driver = $request->user();
+        $driver->status = 'inactive';
+        $driver->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status driver telah diubah menjadi inactive.',
         ], 200);
     }
 

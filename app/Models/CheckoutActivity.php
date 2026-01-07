@@ -4,25 +4,23 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class DriverLogActivity extends Model
+class CheckoutActivity extends Model
 {
-    protected $table = 'driver_log_activities';
+
+    protected $table = 'checkout_activities';
     protected $fillable = [
         'driver_id',
+        'checkout_time',
         'check_point_id',
-        'status',
-        'check_In',
-        'check_Out',
-        'last_activity',
-        'current_latitude',
-        'current_longitude',
-        'last_location_update',
+        'nama_material',
+        'jumlah_kubikasi',
+        'nama_kernet',
     ];
 
     public function driver()
     {
         return $this->belongsTo(Driver::class);
-    }   
+    }
 
     public function checkPoint()
     {

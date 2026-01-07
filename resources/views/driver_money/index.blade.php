@@ -519,7 +519,15 @@
                         <span class="amount-positive">Rp {{ number_format($driver->driverMoney->amount ?? 0, 0, ',', '.') }}</span>
                     </td>
                     <td>
-                        <span class="amount-negative">Rp {{ number_format($driver->driverRequests->where('request_type', 'pemotongan')->sum('amount'), 0, ',', '.') }}</span>
+                        <span class="amount-negative">
+                            Rp {{ number_format(
+                                optional($driver->driverRequests)
+                                    ->where('request_type', 'pemotongan')
+                                    ->where('status', 'pending')
+                                    ->sum('amount') ?? 0,
+                                0, ',', '.'
+                            ) }}
+                        </span>
                     </td>
                     <td style="color: #888;">
                         {{ $driver->driverMoney ? $driver->driverMoney->updated_at->format('Y-m-d') : '-' }}

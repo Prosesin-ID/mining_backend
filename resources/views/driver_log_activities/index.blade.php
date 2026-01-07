@@ -434,7 +434,7 @@
                             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                 <circle cx="12" cy="12" r="10" fill="currentColor"/>
                             </svg>
-                            <span class="time-value">{{ $log->check_In }}</span>
+                            <span class="time-value" data-utc-time="{{ $log->check_In }}">{{ \Carbon\Carbon::parse($log->check_In)->format('Y-m-d H:i:s') }}</span>
                         </div>
                     </td>
                     <td>
@@ -443,7 +443,7 @@
                             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                 <circle cx="12" cy="12" r="10" fill="currentColor"/>
                             </svg>
-                            <span class="time-value">{{ $log->check_Out }}</span>
+                            <span class="time-value" data-utc-time="{{ $log->check_Out }}">{{ \Carbon\Carbon::parse($log->check_Out)->format('Y-m-d H:i:s') }}</span>
                         </div>
                         @else
                         <span style="color: #666;">-</span>
@@ -501,6 +501,26 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
+    
+    // Convert UTC timestamps to local timezone
+    const timeElements = document.querySelectorAll('.time-value[data-utc-time]');
+    timeElements.forEach(function(element) {
+        const utcTime = element.getAttribute('data-utc-time');
+        if (utcTime) {
+            try {
+                const date = new Date(utcTime);
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                const seconds = String(date.getSeconds()).padStart(2, '0');
+                element.textContent = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+            } catch (e) {
+                console.error('Failed to parse time:', e);
+            }
+        }
+    });
 });
 </script>
 

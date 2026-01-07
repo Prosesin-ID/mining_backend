@@ -17,6 +17,9 @@ class Driver extends Authenticatable
         'own_type',
         'nama_pemilik',
         'status',
+        'current_latitude',
+        'current_longitude',
+        'last_location_update',
     ];
 
     protected $hidden = [
@@ -54,5 +57,10 @@ class Driver extends Authenticatable
     public function logActivities()
     {
         return $this->hasMany(DriverLogActivity::class);
+    }
+
+    public function checkoutActivities()
+    {
+        return $this->hasMany(CheckoutActivity::class);
     }
 }
