@@ -4,9 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Laravel\Sanctum\HasApiTokens;
 
 class Driver extends Authenticatable
 {
+    use HasApiTokens;
     protected $fillable = [
         'name',
         'email',
@@ -19,6 +21,10 @@ class Driver extends Authenticatable
 
     protected $hidden = [
         'password',
+    ];
+
+    protected $casts = [
+        'password' => 'hashed',
     ];
 
     /**

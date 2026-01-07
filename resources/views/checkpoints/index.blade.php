@@ -1,6 +1,10 @@
 @extends('layouts.app')
 
 @section('content')
+<script>
+    const GOOGLE_MAPS_API_KEY = "{{ env('GOOGLE_MAPS_API_KEY') }}";
+</script>
+<script src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_MAPS_API_KEY') }}&libraries=places&callback=initMap" async defer></script>
 <style>
     .page-header {
         display: flex;
@@ -447,6 +451,146 @@
         border: 1px solid #4ade80;
         color: #4ade80;
     }
+
+    /* Google Maps Styles */
+    .map-container {
+        width: 100%;
+        height: 400px;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 20px;
+        border: 1px solid #2a2a2a;
+    }
+
+    #map, #editMap {
+        width: 100%;
+        height: 100%;
+    }
+
+    .map-search-box {
+        position: relative;
+        margin-bottom: 15px;
+    }
+
+    .map-search-box input {
+        width: 100%;
+        padding: 12px 45px 12px 15px;
+        background: rgba(30, 30, 30, 0.9);
+        border: 1px solid #2a2a2a;
+        border-radius: 8px;
+        color: #fff;
+        font-size: 14px;
+    }
+
+    .map-search-box input:focus {
+        outline: none;
+        border-color: #D4AF37;
+    }
+
+    .map-search-btn {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: #D4AF37;
+        border: none;
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s;
+    }
+
+    .map-search-btn:hover {
+        background: #C19B2C;
+    }
+
+    .map-search-btn svg {
+        width: 16px;
+        height: 16px;
+        fill: #000;
+    }
+
+    .map-controls {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+
+    .map-btn {
+        padding: 8px 16px;
+        background: rgba(30, 30, 30, 0.9);
+        border: 1px solid #2a2a2a;
+        color: #D4AF37;
+        border-radius: 6px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .map-btn:hover {
+        background: rgba(212, 175, 55, 0.1);
+        border-color: #D4AF37;
+    }
+
+    .map-btn svg {
+        width: 14px;
+        height: 14px;
+        fill: currentColor;
+    }
+
+    .map-info {
+        padding: 12px;
+        background: rgba(212, 175, 55, 0.1);
+        border: 1px solid #D4AF37;
+        border-radius: 8px;
+        margin-bottom: 15px;
+    }
+
+    .map-info p {
+        margin: 0;
+        font-size: 12px;
+        color: #D4AF37;
+        line-height: 1.6;
+    }
+
+    .coordinates-display {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        padding: 12px;
+        background: rgba(30, 30, 30, 0.5);
+        border: 1px solid #2a2a2a;
+        border-radius: 8px;
+        margin-bottom: 15px;
+    }
+
+    .coord-item {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .coord-label {
+        font-size: 10px;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+    }
+
+    .coord-value {
+        font-size: 14px;
+        color: #D4AF37;
+        font-weight: 600;
+        font-family: monospace;
+    }
+
 </style>
 
 @if ($message = Session::get('success'))
@@ -574,6 +718,51 @@
         <form action="{{ route('checkpoints.store') }}" method="POST">
             @csrf
             <div class="modal-body">
+                <!-- Map Section -->
+                <div class="map-info">
+                    <p>📍 <strong>Klik pada peta</strong> untuk memilih lokasi checkpoint atau gunakan search untuk mencari alamat</p>
+                </div>
+
+                <div class="map-search-box">
+                    <input type="text" id="addSearchBox" placeholder="Cari lokasi (contoh: Jakarta, Indonesia)">
+                    <button type="button" class="map-search-btn" onclick="searchLocation('add')">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="map-controls">
+                    <button type="button" class="map-btn" onclick="useCurrentLocation('add')">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0013 3.06V1h-2v2.06A8.994 8.994 0 003.06 11H1v2h2.06A8.994 8.994 0 0011 20.94V23h2v-2.06A8.994 8.994 0 0020.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+                        </svg>
+                        Lokasi Saya
+                    </button>
+                    <button type="button" class="map-btn" onclick="resetMap('add')">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                        </svg>
+                        Reset
+                    </button>
+                </div>
+
+                <div class="map-container">
+                    <div id="map"></div>
+                </div>
+
+                <div class="coordinates-display">
+                    <div class="coord-item">
+                        <span class="coord-label">Latitude</span>
+                        <span class="coord-value" id="addLatDisplay">-</span>
+                    </div>
+                    <div class="coord-item">
+                        <span class="coord-label">Longitude</span>
+                        <span class="coord-value" id="addLngDisplay">-</span>
+                    </div>
+                </div>
+
+                <!-- Form Fields -->
                 <div class="form-group">
                     <label for="add_name">Nama Checkpoint *</label>
                     <input type="text" id="add_name" name="name" placeholder="Masukkan nama checkpoint" required>
@@ -591,11 +780,11 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="add_latitude">Latitude *</label>
-                        <input type="number" step="any" id="add_latitude" name="latitude" placeholder="-6.2088" required>
+                        <input type="number" step="any" id="add_latitude" name="latitude" placeholder="-6.2088" required readonly>
                     </div>
                     <div class="form-group">
                         <label for="add_longitude">Longitude *</label>
-                        <input type="number" step="any" id="add_longitude" name="longitude" placeholder="106.8456" required>
+                        <input type="number" step="any" id="add_longitude" name="longitude" placeholder="106.8456" required readonly>
                     </div>
                 </div>
 
@@ -642,6 +831,45 @@
             @csrf
             @method('PUT')
             <div class="modal-body">
+                <!-- Map Section -->
+                <div class="map-info">
+                    <p>📍 <strong>Klik pada peta</strong> untuk mengubah lokasi checkpoint atau drag marker</p>
+                </div>
+
+                <div class="map-search-box">
+                    <input type="text" id="editSearchBox" placeholder="Cari lokasi (contoh: Jakarta, Indonesia)">
+                    <button type="button" class="map-search-btn" onclick="searchLocation('edit')">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="map-controls">
+                    <button type="button" class="map-btn" onclick="useCurrentLocation('edit')">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0013 3.06V1h-2v2.06A8.994 8.994 0 003.06 11H1v2h2.06A8.994 8.994 0 0011 20.94V23h2v-2.06A8.994 8.994 0 0020.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+                        </svg>
+                        Lokasi Saya
+                    </button>
+                </div>
+
+                <div class="map-container">
+                    <div id="editMap"></div>
+                </div>
+
+                <div class="coordinates-display">
+                    <div class="coord-item">
+                        <span class="coord-label">Latitude</span>
+                        <span class="coord-value" id="editLatDisplay">-</span>
+                    </div>
+                    <div class="coord-item">
+                        <span class="coord-label">Longitude</span>
+                        <span class="coord-value" id="editLngDisplay">-</span>
+                    </div>
+                </div>
+
+                <!-- Form Fields -->
                 <div class="form-group">
                     <label for="edit_name">Nama Checkpoint *</label>
                     <input type="text" id="edit_name" name="name" required>
@@ -658,11 +886,11 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="edit_latitude">Latitude *</label>
-                        <input type="number" step="any" id="edit_latitude" name="latitude" required>
+                        <input type="number" step="any" id="edit_latitude" name="latitude" required readonly>
                     </div>
                     <div class="form-group">
                         <label for="edit_longitude">Longitude *</label>
-                        <input type="number" step="any" id="edit_longitude" name="longitude" required>
+                        <input type="number" step="any" id="edit_longitude" name="longitude" required readonly>
                     </div>
                 </div>
 
@@ -689,8 +917,297 @@
 </div>
 
 <script>
+    // Google Maps Variables
+    let map = null;
+    let editMap = null;
+    let marker = null;
+    let editMarker = null;
+    let geocoder = null;
+    let isMapInitialized = false;
+
+    // Initialize Google Maps
+    function initMap() {
+        if (typeof google === 'undefined') {
+            console.error('Google Maps API not loaded');
+            return;
+        }
+
+        geocoder = new google.maps.Geocoder();
+        isMapInitialized = true;
+        console.log('Google Maps initialized');
+    }
+
+    // Initialize Add Map
+    function initAddMap() {
+        if (!isMapInitialized) {
+            console.log('Waiting for Google Maps API...');
+            setTimeout(initAddMap, 500);
+            return;
+        }
+
+        // Default location: Jakarta, Indonesia
+        const defaultLocation = { lat: -6.2088, lng: 106.8456 };
+        
+        const mapElement = document.getElementById('map');
+        if (!mapElement) {
+            console.error('Map element not found');
+            return;
+        }
+
+        map = new google.maps.Map(mapElement, {
+            center: defaultLocation,
+            zoom: 12,
+            mapTypeControl: true,
+            streetViewControl: false,
+            fullscreenControl: true,
+            styles: [
+                {
+                    "featureType": "all",
+                    "elementType": "geometry",
+                    "stylers": [{"color": "#242f3e"}]
+                },
+                {
+                    "featureType": "all",
+                    "elementType": "labels.text.stroke",
+                    "stylers": [{"color": "#242f3e"}]
+                },
+                {
+                    "featureType": "all",
+                    "elementType": "labels.text.fill",
+                    "stylers": [{"color": "#746855"}]
+                }
+            ]
+        });
+
+        // Add click listener
+        map.addListener('click', function(event) {
+            placeMarker(event.latLng, 'add');
+        });
+
+        console.log('Add map initialized');
+    }
+
+    // Initialize Edit Map
+    function initEditMap(lat, lng) {
+        if (!isMapInitialized) {
+            console.log('Waiting for Google Maps API...');
+            setTimeout(() => initEditMap(lat, lng), 500);
+            return;
+        }
+
+        const location = { lat: parseFloat(lat) || -6.2088, lng: parseFloat(lng) || 106.8456 };
+        
+        const mapElement = document.getElementById('editMap');
+        if (!mapElement) {
+            console.error('Edit map element not found');
+            return;
+        }
+
+        editMap = new google.maps.Map(mapElement, {
+            center: location,
+            zoom: 15,
+            mapTypeControl: true,
+            streetViewControl: false,
+            fullscreenControl: true,
+            styles: [
+                {
+                    "featureType": "all",
+                    "elementType": "geometry",
+                    "stylers": [{"color": "#242f3e"}]
+                },
+                {
+                    "featureType": "all",
+                    "elementType": "labels.text.stroke",
+                    "stylers": [{"color": "#242f3e"}]
+                },
+                {
+                    "featureType": "all",
+                    "elementType": "labels.text.fill",
+                    "stylers": [{"color": "#746855"}]
+                }
+            ]
+        });
+
+        // Add click listener
+        editMap.addListener('click', function(event) {
+            placeMarker(event.latLng, 'edit');
+        });
+
+        // Place initial marker
+        if (lat && lng) {
+            placeMarker(new google.maps.LatLng(lat, lng), 'edit');
+        }
+
+        console.log('Edit map initialized');
+    }
+
+    // Place marker on map
+    function placeMarker(location, mode) {
+        const lat = location.lat();
+        const lng = location.lng();
+
+        if (mode === 'add') {
+            if (marker) {
+                marker.setMap(null);
+            }
+
+            marker = new google.maps.Marker({
+                position: location,
+                map: map,
+                draggable: true,
+                animation: google.maps.Animation.DROP,
+                icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 10,
+                    fillColor: '#D4AF37',
+                    fillOpacity: 1,
+                    strokeColor: '#fff',
+                    strokeWeight: 2
+                }
+            });
+
+            marker.addListener('dragend', function(event) {
+                updateCoordinates(event.latLng.lat(), event.latLng.lng(), 'add');
+            });
+
+            updateCoordinates(lat, lng, 'add');
+        } else {
+            if (editMarker) {
+                editMarker.setMap(null);
+            }
+
+            editMarker = new google.maps.Marker({
+                position: location,
+                map: editMap,
+                draggable: true,
+                animation: google.maps.Animation.DROP,
+                icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 10,
+                    fillColor: '#D4AF37',
+                    fillOpacity: 1,
+                    strokeColor: '#fff',
+                    strokeWeight: 2
+                }
+            });
+
+            editMarker.addListener('dragend', function(event) {
+                updateCoordinates(event.latLng.lat(), event.latLng.lng(), 'edit');
+            });
+
+            updateCoordinates(lat, lng, 'edit');
+        }
+    }
+
+    // Update coordinates in form
+    function updateCoordinates(lat, lng, mode) {
+        const latRounded = lat.toFixed(6);
+        const lngRounded = lng.toFixed(6);
+
+        if (mode === 'add') {
+            document.getElementById('add_latitude').value = latRounded;
+            document.getElementById('add_longitude').value = lngRounded;
+            document.getElementById('addLatDisplay').textContent = latRounded;
+            document.getElementById('addLngDisplay').textContent = lngRounded;
+        } else {
+            document.getElementById('edit_latitude').value = latRounded;
+            document.getElementById('edit_longitude').value = lngRounded;
+            document.getElementById('editLatDisplay').textContent = latRounded;
+            document.getElementById('editLngDisplay').textContent = lngRounded;
+        }
+    }
+
+    // Search location
+    function searchLocation(mode) {
+        const searchBox = mode === 'add' 
+            ? document.getElementById('addSearchBox') 
+            : document.getElementById('editSearchBox');
+        
+        const address = searchBox.value;
+        
+        if (!address) {
+            alert('Masukkan alamat atau nama lokasi');
+            return;
+        }
+
+        if (!geocoder) {
+            alert('Geocoder belum siap, coba lagi');
+            return;
+        }
+
+        geocoder.geocode({ address: address }, function(results, status) {
+            if (status === 'OK' && results[0]) {
+                const location = results[0].geometry.location;
+                
+                if (mode === 'add') {
+                    map.setCenter(location);
+                    map.setZoom(15);
+                    placeMarker(location, 'add');
+                } else {
+                    editMap.setCenter(location);
+                    editMap.setZoom(15);
+                    placeMarker(location, 'edit');
+                }
+            } else {
+                alert('Lokasi tidak ditemukan: ' + status);
+            }
+        });
+    }
+
+    // Use current location
+    function useCurrentLocation(mode) {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const location = new google.maps.LatLng(
+                        position.coords.latitude,
+                        position.coords.longitude
+                    );
+
+                    if (mode === 'add') {
+                        map.setCenter(location);
+                        map.setZoom(15);
+                        placeMarker(location, 'add');
+                    } else {
+                        editMap.setCenter(location);
+                        editMap.setZoom(15);
+                        placeMarker(location, 'edit');
+                    }
+                },
+                function(error) {
+                    alert('Gagal mendapatkan lokasi: ' + error.message);
+                }
+            );
+        } else {
+            alert('Browser tidak mendukung geolocation');
+        }
+    }
+
+    // Reset map to default
+    function resetMap(mode) {
+        const defaultLocation = { lat: -6.2088, lng: 106.8456 };
+        
+        if (mode === 'add') {
+            map.setCenter(defaultLocation);
+            map.setZoom(12);
+            if (marker) {
+                marker.setMap(null);
+                marker = null;
+            }
+            document.getElementById('add_latitude').value = '';
+            document.getElementById('add_longitude').value = '';
+            document.getElementById('addLatDisplay').textContent = '-';
+            document.getElementById('addLngDisplay').textContent = '-';
+        }
+    }
+
     function openModal(modalId) {
         document.getElementById(modalId).classList.add('active');
+        
+        // Initialize map when modal opens
+        if (modalId === 'addModal') {
+            setTimeout(initAddMap, 100);
+        }
     }
 
     function closeModal(modalId) {
@@ -698,7 +1215,7 @@
     }
 
     function editCheckpoint(id) {
-        console.log('Edit checkpoint ID:', id); // Debug
+        console.log('Edit checkpoint ID:', id);
         
         fetch(`/checkpoints/${id}/edit`, {
             method: 'GET',
@@ -709,16 +1226,15 @@
             }
         })
         .then(response => {
-            console.log('Response status:', response.status); // Debug
+            console.log('Response status:', response.status);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             return response.json();
         })
         .then(data => {
-            console.log('Data received:', data); // Debug
+            console.log('Data received:', data);
             
-            // Pastikan elemen ada sebelum set value
             const nameInput = document.getElementById('edit_name');
             const kategoriSelect = document.getElementById('edit_kategori');
             const latInput = document.getElementById('edit_latitude');
@@ -735,7 +1251,16 @@
             if (statusSelect) statusSelect.value = data.status || 'active';
             if (editForm) editForm.action = `/checkpoints/${id}`;
             
+            // Update display
+            document.getElementById('editLatDisplay').textContent = data.latitude || '-';
+            document.getElementById('editLngDisplay').textContent = data.longitude || '-';
+            
             openModal('editModal');
+            
+            // Initialize edit map with existing coordinates
+            setTimeout(() => {
+                initEditMap(data.latitude, data.longitude);
+            }, 100);
         })
         .catch(error => {
             console.error('Error:', error);
@@ -774,6 +1299,30 @@
             }
         }
     }
+
+    // Allow Enter key for search
+    document.addEventListener('DOMContentLoaded', function() {
+        const addSearchBox = document.getElementById('addSearchBox');
+        const editSearchBox = document.getElementById('editSearchBox');
+        
+        if (addSearchBox) {
+            addSearchBox.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    searchLocation('add');
+                }
+            });
+        }
+        
+        if (editSearchBox) {
+            editSearchBox.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    searchLocation('edit');
+                }
+            });
+        }
+    });
 
     // Close modal when clicking outside
     window.onclick = function(event) {
