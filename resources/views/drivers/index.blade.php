@@ -688,7 +688,11 @@
                     </div>
                 </td>
                 <td>
-                    <span class="unit-badge">{{ $driver->unitTruck->no_unit }}</span>
+                    @if($driver->unitTruck)
+                        <span class="unit-badge">{{ $driver->unitTruck->no_unit }}</span>
+                    @else
+                        <span class="unit-badge" style="opacity: 0.5;">Belum Ada Unit</span>
+                    @endif
                 </td>
                 <td>
                     <span class="status-badge {{ $driver->status }}">
