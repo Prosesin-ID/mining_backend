@@ -48,7 +48,16 @@ Route::middleware(['validate.user'])->group(function () {
     Route::get('/laporan/export-pdf', [LaporanController::class, 'exportPdf'])->name('laporan.export.pdf');
     Route::get('/laporan/export-excel', [LaporanController::class, 'exportExcel'])->name('laporan.export.excel');
     
-    // Location tracking for map
-    Route::get('/api/location/active', [LocationTrackingController::class, 'getActiveLocations'])->name('location.active');
+    // Location tracking for map (Web version - uses session auth)
+    Route::get('/location/active-web', [LocationTrackingController::class, 'getActiveLocations'])->name('location.active');
+    
+    // Test route for debugging
+    Route::get('/test-checkpoint', function() {
+        \Log::info('===== TEST ROUTE CALLED =====');
+        return response()->json(['test' => 'working', 'time' => now()]);
+    })->name('test.checkpoint');
+    
+    // Checkpoint locations for map (Web version - uses session auth)
+    Route::get('/checkpoints/locations', [AuthUserController::class, 'getCheckpointLocations'])->name('checkpoints.locations');
 
 });

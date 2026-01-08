@@ -22,6 +22,18 @@ class CheckInApiController extends Controller
             ]);
 
             $driver = $request->user();
+            
+            // Validasi status driver
+            if ($driver->status !== 'active') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Akun Anda sedang tidak aktif. Silakan hubungi admin.',
+                    'data' => [
+                        'driver_status' => $driver->status,
+                    ],
+                ], 403);
+            }
+            
             $lat = $request->latitude;
             $lng = $request->longitude;
             

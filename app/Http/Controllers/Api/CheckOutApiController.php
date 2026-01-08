@@ -41,7 +41,7 @@ class CheckOutApiController extends Controller
                 'data' => [
                     'log_id' => $activeCheckIn->id,
                     'checkpoint_id' => $activeCheckIn->check_point_id,
-                    'checkpoint_name' => $activeCheckIn->checkPoint->name,
+                    'checkpoint_name' => $activeCheckIn->checkPoint->name ?? 'Checkpoint (ID: ' . $activeCheckIn->check_point_id . ')',
                     'check_in_time' => Carbon::parse($activeCheckIn->check_In)->toIso8601String(),
                 ],
             ], 200);

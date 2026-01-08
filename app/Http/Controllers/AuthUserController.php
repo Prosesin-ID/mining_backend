@@ -97,4 +97,58 @@ class AuthUserController extends Controller implements HasMiddleware
         return redirect()->route('login')
             ->withSuccess('You have logged out successfully!');
     }
+    
+    /**
+     * Get checkpoint locations for map
+     */
+    public function getCheckpointLocations()
+    {
+        // Log immediately at method entry
+        error_log("===== CHECKPOINT LOCATIONS METHOD CALLED =====");
+        \Log::info('===== Getting checkpoint locations =====');
+        \Log::info('Request URL: ' . request()->url());
+        \Log::info('Request method: ' . request()->method());
+        
+        try {
+            
+            $checkpoints = CheckPoint::where('status', 'active')->get();
+            
+            \Log::info('Found checkpoints: ' . $checkpoints->count());
+            
+            $data = $checkpoints->map(function ($checkpoint) {
+                return [
+                    'id' => $checkpoint->id,
+                    'name' => $checkpoint->name ?? 'Checkpoint ' . $checkpoint->id,
+                    'latitude' => (float) $checkpoint->latitude,
+                    'longitude' => (float) $checkpoint->longitude,
+                    'status' => $checkpoint->status,
+                    'radius' => $checkpoint->radius ?? 100,
+                    'kategori' => $checkpoint->kategori,
+                ];
+            });
+
+            \Log::info('Mapped data count: ' . $data->count());
+
+            $response = [
+                'success' => true,
+                'data' => $data,
+                'count' => $data->count(),
+            ];
+            
+            \Log::info('Sending response...');
+
+            return response()->json($response);
+        } catch (\Exception $e) {
+            \Log::error('===== Error in getCheckpointLocations =====');
+            \Log::error('Error: ' . $e->getMessage());
+            \Log::error('Line: ' . $e->getLine());
+            \Log::error('Trace: ' . $e->getTraceAsString());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get checkpoint locations',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }

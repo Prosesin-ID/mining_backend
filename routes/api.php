@@ -8,11 +8,15 @@ use App\Http\Controllers\Api\RequestSaldoController;
 use App\Http\Controllers\Api\CheckInApiController;
 use App\Http\Controllers\Api\CheckOutApiController;
 use App\Http\Controllers\Api\LocationTrackingController;
+use App\Http\Controllers\AuthUserController;
 
 // Public routes (tidak perlu authentication)
 Route::prefix('driver')->group(function () {
     Route::post('/login', [DriverAuthController::class, 'login']);
 });
+
+// Public checkpoint locations for admin map (session-based auth handled on web side)
+Route::get('/checkpoints/locations', [AuthUserController::class, 'getCheckpointLocations']);
 
 // Protected routes (perlu authentication token)
 Route::middleware('auth:sanctum')->prefix('driver')->group(function () {
@@ -43,4 +47,5 @@ Route::middleware('auth:sanctum')->prefix('driver')->group(function () {
     // Location tracking routes
     Route::post('/location/update', [LocationTrackingController::class, 'updateLocation']);
     Route::get('/location/active', [LocationTrackingController::class, 'getActiveLocations']);
+    
 });
