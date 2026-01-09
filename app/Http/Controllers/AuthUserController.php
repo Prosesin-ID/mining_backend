@@ -28,7 +28,7 @@ class AuthUserController extends Controller implements HasMiddleware
     {
         return view('auth.register');
     }
-    
+
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
@@ -61,8 +61,7 @@ class AuthUserController extends Controller implements HasMiddleware
             'password' => 'required'
         ]);
 
-        if(Auth::attempt($credentials))
-        {
+        if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
             return redirect()->intended('home');
         }
@@ -72,23 +71,34 @@ class AuthUserController extends Controller implements HasMiddleware
         ])->onlyInput('email');
 
     }
-    
+
     public function home()
     {
         $trucks = UnitTruck::count();
         $checkpoints = CheckPoint::count();
         $onLocationDrivers = DriverLogActivity::where('status', 'on_location')->count();
-        $maintenanceTrucks = UnitTruck::where('status', 'maintenance')->count();   
+        $maintenanceTrucks = UnitTruck::where('status', 'maintenance')->count();
         $completedDrivers = DriverLogActivity::where('status', 'selesai')->count();
         $notCheckOutDrivers = DriverLogActivity::whereNull('check_Out')->count();
-        $mtTruckDatas = UnitTruck::where('status', 'maintenance')->with('driver')->get();
+        $mtTruckDatas = UnitTruck::where('status', 'maintenance')
+            ->with('driver')
+            ->orderByDesc('created_at')
+            ->get();
         $logs = DriverLogActivity::with('driver.unitTruck', 'checkPoint')
             ->orderBy('created_at', 'desc')
             ->get();
-        return view('auth.home', compact('trucks', 'checkpoints', 'onLocationDrivers', 'maintenanceTrucks', 
-        'logs', 'mtTruckDatas', 'completedDrivers', 'notCheckOutDrivers'));
-    } 
-    
+        return view('auth.home', compact(
+            'trucks',
+            'checkpoints',
+            'onLocationDrivers',
+            'maintenanceTrucks',
+            'logs',
+            'mtTruckDatas',
+            'completedDrivers',
+            'notCheckOutDrivers'
+        ));
+    }
+
     public function logout(Request $request): RedirectResponse
     {
         Auth::logout();
@@ -97,7 +107,7 @@ class AuthUserController extends Controller implements HasMiddleware
         return redirect()->route('login')
             ->withSuccess('You have logged out successfully!');
     }
-    
+
     /**
      * Get checkpoint locations for map
      */
@@ -108,13 +118,13 @@ class AuthUserController extends Controller implements HasMiddleware
         \Log::info('===== Getting checkpoint locations =====');
         \Log::info('Request URL: ' . request()->url());
         \Log::info('Request method: ' . request()->method());
-        
+
         try {
-            
+
             $checkpoints = CheckPoint::where('status', 'active')->get();
-            
+
             \Log::info('Found checkpoints: ' . $checkpoints->count());
-            
+
             $data = $checkpoints->map(function ($checkpoint) {
                 return [
                     'id' => $checkpoint->id,
@@ -134,7 +144,7 @@ class AuthUserController extends Controller implements HasMiddleware
                 'data' => $data,
                 'count' => $data->count(),
             ];
-            
+
             \Log::info('Sending response...');
 
             return response()->json($response);
@@ -143,7 +153,7 @@ class AuthUserController extends Controller implements HasMiddleware
             \Log::error('Error: ' . $e->getMessage());
             \Log::error('Line: ' . $e->getLine());
             \Log::error('Trace: ' . $e->getTraceAsString());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to get checkpoint locations',

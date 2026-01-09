@@ -29,6 +29,7 @@ Route::middleware('auth:sanctum')->prefix('driver')->group(function () {
     Route::post('/home/nearby-checkpoints', [HomeApiController::class, 'nearbyCheckpoints']);
     Route::post('/home/status/on', [HomeApiController::class, 'turnOnStatus']);
     Route::post('/home/status/off', [HomeApiController::class, 'turnOffStatus']);
+    Route::post('/home/status/end-maintenance', [HomeApiController::class, 'endMaintenance']);
     
     // Request Saldo routes
     Route::post('/request-saldo/top-up', [RequestSaldoController::class, 'topUp']);

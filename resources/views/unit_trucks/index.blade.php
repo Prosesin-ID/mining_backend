@@ -9,6 +9,9 @@
         padding: 24px;
         position: relative;
         transition: all 0.3s;
+        min-height: 380px;
+        display: flex;
+        flex-direction: column;
     }
     
     .unit-card:hover {
@@ -82,7 +85,8 @@
         display: flex;
         flex-direction: column;
         gap: 10px;
-        margin-bottom: 20px;
+        margin-bottom: 12px;
+        flex: 1;
     }
     
     .info-row {
@@ -102,6 +106,7 @@
     .unit-actions {
         display: flex;
         gap: 10px;
+        margin-top: auto;
     }
     
     .btn-edit {
@@ -140,6 +145,59 @@
     .btn-delete:hover {
         background: #ff4444;
         color: #fff;
+    }
+    
+    .maintenance-info {
+        background: rgba(255, 165, 0, 0.1);
+        border: 1px solid rgba(255, 165, 0, 0.3);
+        border-radius: 8px;
+        padding: 8px 10px;
+        margin-bottom: 12px;
+        max-height: 70px;
+        overflow: hidden;
+    }
+    
+    .maintenance-info-title {
+        font-size: 10px;
+        font-weight: 700;
+        color: #ffa500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+    }
+    
+    .maintenance-info-text {
+        font-size: 11px;
+        color: #ddd;
+        line-height: 1.4;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
+    
+    .btn-end-maintenance {
+        flex: 1;
+        padding: 12px;
+        background: #00cc00;
+        border: none;
+        color: #fff;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 0.3s;
+        cursor: pointer;
+    }
+    
+    .btn-end-maintenance:hover {
+        background: #00ff00;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 255, 0, 0.3);
     }
     
     .btn-add {
@@ -442,22 +500,46 @@
                     </div>
                 </div>
                 
+                @if($truck->status === 'maintenance' && $truck->reason_maintenance)
+                <div class="maintenance-info">
+                    <div class="maintenance-info-title">⚠️ Alasan Maintenance:</div>
+                    <div class="maintenance-info-text">{{ $truck->reason_maintenance }}</div>
+                    @if($truck->maintenance_start_time)
+                    <div class="maintenance-info-text" style="font-size: 11px; color: #888; margin-top: 6px;">
+                        Dimulai: {{ \Carbon\Carbon::parse($truck->maintenance_start_time)->format('d M Y H:i') }}
+                    </div>
+                    @endif
+                </div>
+                @endif
+                
                 <div class="unit-actions">
-                    <button class="btn-edit" onclick="editUnit({{ $truck->id }})">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-                        </svg>
-                        EDIT
-                    </button>
-                    <form action="{{ route('unit_trucks.destroy', $truck->id) }}" method="POST" style="display: inline;">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn-delete" onclick="return confirm('Yakin hapus unit ini?')">
+                    @if($truck->status === 'maintenance')
+                        <form action="{{ route('unit_trucks.end_maintenance', $truck->id) }}" method="POST" style="flex: 1;">
+                            @csrf
+                            <button type="submit" class="btn-end-maintenance" onclick="return confirm('Yakin mengakhiri maintenance?')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
+                                </svg>
+                                END MAINTENANCE
+                            </button>
+                        </form>
+                    @else
+                        <button class="btn-edit" onclick="editUnit({{ $truck->id }})">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
                             </svg>
+                            EDIT
                         </button>
-                    </form>
+                        <form action="{{ route('unit_trucks.destroy', $truck->id) }}" method="POST" style="display: inline;">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn-delete" onclick="return confirm('Yakin hapus unit ini?')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                                </svg>
+                            </button>
+                        </form>
+                    @endif
                 </div>
             </div>
         </div>
@@ -572,7 +654,6 @@
                         <label class="form-label">Status</label>
                         <select class="form-select" name="status" required>
                             <option value="active">Active</option>
-                            <option value="maintenance">Maintenance</option>
                             <option value="inactive">Inactive</option>
                         </select>
                     </div>

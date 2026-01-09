@@ -151,6 +151,42 @@ class HomeApiController extends Controller
     public function turnOffStatus(Request $request)
     {
         $driver = $request->user();
+        
+        // List of valid reasons
+        $validReasons = [
+            'Rusak Mesin',
+            'Pecah Ban',
+            'Perawatan Rutin',
+            'Kendala Lalu Lintas',
+            'Lainnya'
+        ];
+        
+        $request->validate([
+            'reason_type' => 'required|string|in:' . implode(',', $validReasons),
+            'reason_detail' => 'required_if:reason_type,Lainnya|nullable|string|max:255',
+        ]);
+
+        $unitTruck = $driver->unitTruck;
+
+        if (!$unitTruck) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Driver tidak memiliki unit truck terdaftar.',
+            ], 400);
+        }
+        
+        // Build the reason text
+        $reasonMaintenance = $request->reason_type;
+        if ($request->reason_type === 'Lainnya' && $request->reason_detail) {
+            $reasonMaintenance = 'Lainnya: ' . $request->reason_detail;
+        }
+        
+        $unitTruck->update([
+            'status' => 'maintenance',
+            'reason_maintenance' => $reasonMaintenance,
+            'maintenance_start_time' => now(),
+        ]);
+
         $driver->status = 'inactive';
         $driver->save();
 
@@ -166,12 +202,64 @@ class HomeApiController extends Controller
     public function turnOnStatus(Request $request)
     {
         $driver = $request->user();
+        $unitTruck = $driver->unitTruck;
+        
+        // Check if unit truck is in maintenance status
+        if ($unitTruck && $unitTruck->status === 'maintenance') {
+            // End maintenance and set truck to active
+            $unitTruck->update([
+                'status' => 'active',
+                'reason_maintenance' => null,
+                'maintenance_start_time' => null,
+                'maintenance_end_time' => now(),
+            ]);
+        }
+        
+        // Set driver to active
         $driver->status = 'active';
         $driver->save();
 
         return response()->json([
             'success' => true,
             'message' => 'Status driver telah diubah menjadi active.',
+        ], 200);
+    }
+
+    /**
+     * End maintenance and set status back to active
+     */
+    public function endMaintenance(Request $request)
+    {
+        $driver = $request->user();
+        $unitTruck = $driver->unitTruck;
+
+        if (!$unitTruck) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Driver tidak memiliki unit truck terdaftar.',
+            ], 400);
+        }
+
+        if ($unitTruck->status !== 'maintenance') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unit truck tidak dalam status maintenance.',
+            ], 400);
+        }
+
+        $unitTruck->update([
+            'status' => 'active',
+            'reason_maintenance' => null,
+            'maintenance_start_time' => null,
+            'maintenance_end_time' => now(),
+        ]);
+
+        $driver->status = 'active';
+        $driver->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Maintenance berhasil diakhiri. Status kembali aktif.',
         ], 200);
     }
 

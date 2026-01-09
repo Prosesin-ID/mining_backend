@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\AuthUserController;
@@ -30,7 +31,9 @@ Route::middleware(['validate.user'])->group(function () {
 
     Route::resource('checkpoints', CheckPointController::class);
     Route::resource('drivers', DriverController::class);
+    Route::resource('admin', AdminController::class);
     Route::resource('unit_trucks', UnitTruckController::class);
+    Route::post('/unit_trucks/{unitTruck}/end-maintenance', [UnitTruckController::class, 'endMaintenance'])->name('unit_trucks.end_maintenance');
 
     Route::get('/driver_money', [DriverMoneyController::class, 'index'])->name('driver_money.index');
     Route::put('/driver_money/topup/{driverId}', [DriverMoneyController::class, 'topUp'])->name('driver_money.topup');

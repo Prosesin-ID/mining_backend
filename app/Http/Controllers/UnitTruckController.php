@@ -68,6 +68,25 @@ class UnitTruckController extends Controller
         //
     }
 
+    public function endMaintenance(Request $request, UnitTruck $unitTruck)
+    {
+        $unitTruck->update([
+            'status' => 'active',
+            'reason_maintenance' => null,
+            'maintenance_start_time' => null,
+            'maintenance_end_time' => now(),
+        ]);
+
+        // Also set driver status to active
+        $driver = $unitTruck->driver;
+        if ($driver) {
+            $driver->status = 'active';
+            $driver->save();
+        }
+
+        return redirect()->route('unit_trucks.index')
+            ->with('success', 'Maintenance ended and statuses updated successfully.');
+    }
     /**
      * Show the form for editing the specified resource.
      */
