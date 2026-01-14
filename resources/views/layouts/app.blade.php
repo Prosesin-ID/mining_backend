@@ -33,7 +33,9 @@
             z-index: 1000;
             box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
 
         .sidebar-logo {
@@ -89,6 +91,9 @@
         .sidebar-menu {
             list-style: none;
             padding: 10px 12px;
+            padding-bottom: 20px;
+            flex: 1;
+            overflow-y: auto;
         }
 
         .sidebar-menu a {
@@ -151,17 +156,8 @@
         }
 
         .logout-btn {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            right: 20px;
-            margin-top: 30px;
-        }
-
-        .sidebar-menu {
-            list-style: none;
-            padding: 10px 12px;
-            padding-bottom: 30px;
+            margin-top: auto;
+            padding: 0 20px 20px;
         }
 
         .logout-btn a {
@@ -363,16 +359,16 @@
         }
 
         .sidebar::-webkit-scrollbar-track {
-            background: transparent;
+            background: rgba(255, 255, 255, 0.05);
         }
 
         .sidebar::-webkit-scrollbar-thumb {
-            background: rgba(212, 175, 55, 0.3);
+            background: rgba(255, 255, 255, 0.18);
             border-radius: 3px;
         }
 
         .sidebar::-webkit-scrollbar-thumb:hover {
-            background: rgba(212, 175, 55, 0.5);
+            background: rgba(255, 255, 255, 0.28);
         }
     </style>
 </head>

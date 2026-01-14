@@ -460,6 +460,7 @@
     </div>
 
     <!-- Content Section -->
+    <!-- Content Section -->
     <div class="content-section">
         <div class="section-header">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -500,36 +501,48 @@
 
                 <div class="request-details">
                     @if($request->request_type == 'pemotongan')
-                    <div class="detail-item">
-                        <span class="detail-label">Biaya rute</span>
-                        <span class="detail-value">
-                            @php
-                                // $routeInfo = json_decode($request->notes ?? '{}');
-                                echo $routeInfo->from ?? '-';
-                            @endphp
-                            →
-                            @php
-                                echo $routeInfo->to ?? '-';
-                            @endphp
-                        </span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Rute</span>
-                        <span class="detail-value">
-                            @php
-                                echo $routeInfo->route ?? '-';
-                            @endphp
-                        </span>
-                    </div>
+                        @php
+                            $checkoutData = $request->checkout_data;
+                        @endphp
+                        
+                        @if($checkoutData)
+                        <div class="detail-item">
+                            <span class="detail-label">Dari → Ke</span>
+                            <span class="detail-value">
+                                {{ $request->from_checkpoint ?? 'Unknown' }}
+                                →
+                                {{ $request->to_checkpoint ?? 'Unknown' }}
+                            </span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Material & Kubikasi</span>
+                            <span class="detail-value">
+                                {{ $checkoutData['nama_material'] ?? '-' }}
+                                ({{ $checkoutData['jumlah_kubikasi'] ?? 0 }} m³)
+                            </span>
+                        </div>
+                        @if(!empty($checkoutData['nama_kernet']))
+                        <div class="detail-item">
+                            <span class="detail-label">Nama Kernet</span>
+                            <span class="detail-value">{{ $checkoutData['nama_kernet'] }}</span>
+                        </div>
+                        @endif
+                        @else
+                        <div class="detail-item">
+                            <span class="detail-label">Rute</span>
+                            <span class="detail-value">Data rute tidak tersedia</span>
+                        </div>
+                        @endif
                     @else
-                    <div class="detail-item">
-                        <span class="detail-label">Request top up saldo</span>
-                        <span class="detail-value">Top-up saldo driver</span>
-                    </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Request top up saldo</span>
+                            <span class="detail-value">Top-up saldo driver</span>
+                        </div>
                     @endif
+                    
                     <div class="detail-item">
                         <span class="detail-label">Tanggal Request</span>
-                        <span class="detail-value">{{ $request->created_at->format('Y-m-d H:i') }}</span>
+                        <span class="detail-value">{{ $request->created_at->format('d M Y H:i') }}</span>
                     </div>
                     <div class="detail-item">
                         <span class="detail-label">Jumlah</span>
@@ -539,7 +552,8 @@
                     </div>
                 </div>
 
-                @if($request->notes)
+                {{-- Admin Notes (untuk approved/rejected) --}}
+                @if($request->admin_notes)
                 <div style="background: #1a1a1a; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; border-left: 3px solid {{ $request->status === 'approved' ? '#00ff00' : '#ff4444' }};">
                     <div style="display: flex; align-items: start; gap: 10px;">
                         <svg style="width: 16px; height: 16px; fill: #666; margin-top: 2px;" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -547,7 +561,7 @@
                         </svg>
                         <div style="flex: 1;">
                             <div style="font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Catatan Admin</div>
-                            <div style="color: #ddd; font-size: 13px;">{{ $request->notes }}</div>
+                            <div style="color: #ddd; font-size: 13px;">{{ $request->admin_notes }}</div>
                         </div>
                     </div>
                 </div>
@@ -577,7 +591,7 @@
                     <svg style="width: 14px; height: 14px; fill: #666; vertical-align: middle;" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                     </svg>
-                    Diproses pada {{ $request->updated_at->format('Y-m-d H:i') }}
+                    Diproses pada {{ $request->updated_at->format('d M Y H:i') }}
                 </div>
                 @endif
             </div>
