@@ -303,6 +303,83 @@
         padding: 20px 25px;
         border-top: 1px solid #2a2a2a;
     }
+
+    /* Pagination Styling - Fixed */
+    .pagination-wrapper .pagination {
+        display: flex;
+        gap: 8px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .pagination-wrapper .page-item {
+        list-style: none;
+    }
+
+    .pagination-wrapper .page-link {
+        background: #0a0a0a;
+        border: 1px solid #333;
+        color: #fff;
+        padding: 8px 14px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 600;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 38px;
+        height: 38px;
+    }
+
+    .pagination-wrapper .page-link:hover {
+        background: #1a1a1a;
+        border-color: #D4AF37;
+        color: #D4AF37;
+    }
+
+    .pagination-wrapper .page-item.active .page-link {
+        background: #D4AF37;
+        border-color: #D4AF37;
+        color: #000;
+    }
+
+    .pagination-wrapper .page-item.disabled .page-link {
+        background: #0a0a0a;
+        border-color: #222;
+        color: #444;
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+
+    .pagination-wrapper .page-item.disabled .page-link:hover {
+        background: #0a0a0a !important;
+        border-color: #222 !important;
+        color: #444 !important;
+    }
+
+    /* Force hide all pagination arrows and text */
+    .pagination-wrapper .page-link svg {
+        display: none !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        height: 0 !important;
+    }
+    
+    .pagination-wrapper .page-link span {
+        display: none !important;
+        visibility: hidden !important;
+    }
+    
+    .pagination-wrapper .page-link::before,
+    .pagination-wrapper .page-link::after {
+        content: none !important;
+        display: none !important;
+    }
 </style>
 
 <div class="container-fluid">
@@ -485,8 +562,15 @@
         </div>
 
         @if($logs->hasPages())
+        @php $paginator = $logs->appends(request()->query()); @endphp
         <div class="pagination-wrapper">
-            {{ $logs->links() }}
+            <ul class="pagination">
+                @for($page = 1; $page <= $paginator->lastPage(); $page++)
+                    <li class="page-item {{ $page === $paginator->currentPage() ? 'active' : '' }}">
+                        <a class="page-link" href="{{ $paginator->url($page) }}">{{ $page }}</a>
+                    </li>
+                @endfor
+            </ul>
         </div>
         @endif
     </div>
