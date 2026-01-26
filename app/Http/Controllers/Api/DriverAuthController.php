@@ -90,18 +90,6 @@ class DriverAuthController extends Controller
         ], 200);
     }
 
-    public function turnOffStatus(Request $request)
-    {
-        $driver = $request->user();
-        $driver->status = 'inactive';
-        $driver->save();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Status driver telah diubah menjadi inactive.',
-        ], 200);
-    }
-
     /**
      * Logout driver (revoke token)
      * 

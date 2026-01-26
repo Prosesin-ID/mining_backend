@@ -54,11 +54,8 @@ class HomeApiController extends Controller
     {
         $driver = $request->user();
         
-        // Get today's date (YYYY-MM-DD format)
         $today = now()->format('Y-m-d');
         
-        // Since check_In is STRING (ISO8601 format), use LIKE to match date part
-        // ISO8601 format: 2025-01-07T10:30:00+07:00, so we match the date part
         $activities = $driver->logActivities()
             ->with('checkPoint')
             ->where('check_In', 'LIKE', $today . '%')
@@ -93,17 +90,15 @@ class HomeApiController extends Controller
             $request->validate([
                 'latitude' => 'required|numeric',
                 'longitude' => 'required|numeric',
-                'radius' => 'nullable|numeric', // in kilometers
+                'radius' => 'nullable|numeric',
             ]);
 
             $lat = $request->latitude;
             $lng = $request->longitude;
-            $radius = $request->radius ?? 10; // default 10km
+            $radius = $request->radius ?? 10;
 
             \Log::info("Searching checkpoints near: Lat=$lat, Lng=$lng, Radius=$radius km");
 
-            // Haversine formula to calculate distance
-            // Using DB::raw for subquery to work with both MySQL and PostgreSQL
             $checkpoints = CheckPoint::selectRaw("
                 *,
                 (6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))) AS distance
@@ -123,7 +118,7 @@ class HomeApiController extends Controller
                     'kategori' => $checkpoint->kategori,
                     'latitude' => $checkpoint->latitude,
                     'longitude' => $checkpoint->longitude,
-                    'distance' => round($checkpoint->distance, 2), // in km
+                    'distance' => round($checkpoint->distance, 2),
                     'distance_text' => $checkpoint->distance < 1 
                         ? round($checkpoint->distance * 1000) . 'm' 
                         : round($checkpoint->distance, 1) . 'km',
@@ -146,13 +141,12 @@ class HomeApiController extends Controller
     }
 
     /**
-     * Turn off driver status
+     * Turn off driver status (also sets truck to maintenance)
      */
     public function turnOffStatus(Request $request)
     {
         $driver = $request->user();
         
-        // List of valid reasons
         $validReasons = [
             'Rusak Mesin',
             'Pecah Ban',
@@ -181,32 +175,33 @@ class HomeApiController extends Controller
             $reasonMaintenance = 'Lainnya: ' . $request->reason_detail;
         }
         
+        // Set truck to maintenance
         $unitTruck->update([
             'status' => 'maintenance',
             'reason_maintenance' => $reasonMaintenance,
             'maintenance_start_time' => now(),
         ]);
 
+        // Set driver to inactive
         $driver->status = 'inactive';
         $driver->save();
 
         return response()->json([
             'success' => true,
-            'message' => 'Status driver telah diubah menjadi inactive.',
+            'message' => 'Status driver telah diubah menjadi inactive dan unit dalam maintenance.',
         ], 200);
     }
 
     /**
-     * Turn on driver status
+     * Turn on driver status (also clears maintenance if truck was in maintenance)
      */
     public function turnOnStatus(Request $request)
     {
         $driver = $request->user();
         $unitTruck = $driver->unitTruck;
         
-        // Check if unit truck is in maintenance status
+        // If unit truck exists and is in maintenance, clear it
         if ($unitTruck && $unitTruck->status === 'maintenance') {
-            // End maintenance and set truck to active
             $unitTruck->update([
                 'status' => 'active',
                 'reason_maintenance' => null,
@@ -222,44 +217,6 @@ class HomeApiController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Status driver telah diubah menjadi active.',
-        ], 200);
-    }
-
-    /**
-     * End maintenance and set status back to active
-     */
-    public function endMaintenance(Request $request)
-    {
-        $driver = $request->user();
-        $unitTruck = $driver->unitTruck;
-
-        if (!$unitTruck) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Driver tidak memiliki unit truck terdaftar.',
-            ], 400);
-        }
-
-        if ($unitTruck->status !== 'maintenance') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unit truck tidak dalam status maintenance.',
-            ], 400);
-        }
-
-        $unitTruck->update([
-            'status' => 'active',
-            'reason_maintenance' => null,
-            'maintenance_start_time' => null,
-            'maintenance_end_time' => now(),
-        ]);
-
-        $driver->status = 'active';
-        $driver->save();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Maintenance berhasil diakhiri. Status kembali aktif.',
         ], 200);
     }
 

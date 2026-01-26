@@ -21,21 +21,21 @@ class CheckOutApiController extends Controller
     {
         try {
             $driver = $request->user();
-            
+
             $activeCheckIn = DriverLogActivity::where('driver_id', $driver->id)
                 ->where('status', 'on_location')
                 ->whereNull('check_Out')
                 ->with('checkPoint')
                 ->latest()
                 ->first();
-            
+
             if (!$activeCheckIn) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Tidak ada check-in aktif.',
                 ], 404);
             }
-            
+
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -47,14 +47,14 @@ class CheckOutApiController extends Controller
             ], 200);
         } catch (\Exception $e) {
             \Log::error('Error in getActiveCheckIn: ' . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal mengambil data check-in: ' . $e->getMessage(),
             ], 500);
         }
     }
-    
+
     /**
      * Get available checkout checkpoints (in radius)
      */
@@ -65,27 +65,24 @@ class CheckOutApiController extends Controller
                 'latitude' => 'required|numeric',
                 'longitude' => 'required|numeric',
             ]);
-            
+
             $lat = $request->latitude;
             $lng = $request->longitude;
-            
+
             // Get checkpoints dalam radius 10km dan aktif
             // Use whereRaw instead of having to avoid PostgreSQL alias issue
             $checkpoints = CheckPoint::selectRaw("
-                    *,
-                    (6371 * acos(cos(radians(?)) * cos(radians(CAST(latitude AS DOUBLE PRECISION))) *
-                    cos(radians(CAST(longitude AS DOUBLE PRECISION)) - radians(?)) +
-                    sin(radians(?)) * sin(radians(CAST(latitude AS DOUBLE PRECISION))))) AS distance
-                ", [$lat, $lng, $lat])
+        *,
+        (6371 * acos(
+            cos(radians(?)) * cos(radians(CAST(latitude AS DOUBLE PRECISION))) *
+            cos(radians(CAST(longitude AS DOUBLE PRECISION)) - radians(?)) +
+            sin(radians(?)) * sin(radians(CAST(latitude AS DOUBLE PRECISION)))
+        )) AS distance
+    ", [$lat, $lng, $lat])
                 ->where('status', 'active')
-                ->whereRaw("(6371 * acos(cos(radians(?)) * cos(radians(CAST(latitude AS DOUBLE PRECISION))) *
-                    cos(radians(CAST(longitude AS DOUBLE PRECISION)) - radians(?)) +
-                    sin(radians(?)) * sin(radians(CAST(latitude AS DOUBLE PRECISION))))) <= 10", [$lat, $lng, $lat])
-                ->orderByRaw("(6371 * acos(cos(radians(?)) * cos(radians(CAST(latitude AS DOUBLE PRECISION))) *
-                    cos(radians(CAST(longitude AS DOUBLE PRECISION)) - radians(?)) +
-                    sin(radians(?)) * sin(radians(CAST(latitude AS DOUBLE PRECISION)))))", [$lat, $lng, $lat])
+                ->orderBy('distance') // optional, tapi biasanya kepake
                 ->get();
-            
+
             $data = $checkpoints->map(function ($checkpoint) {
                 return [
                     'id' => $checkpoint->id,
@@ -95,21 +92,22 @@ class CheckOutApiController extends Controller
                     'distance_text' => round($checkpoint->distance, 2) . ' km',
                 ];
             });
-            
+
+
             return response()->json([
                 'success' => true,
                 'data' => $data,
             ], 200);
         } catch (\Exception $e) {
             \Log::error('Error in getCheckoutCheckpoints: ' . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal mengambil checkpoint: ' . $e->getMessage(),
             ], 500);
         }
     }
-    
+
     /**
      * Request checkout with route cost calculation
      */
@@ -122,9 +120,9 @@ class CheckOutApiController extends Controller
                 'jumlah_kubikasi' => 'required|numeric|min:0',
                 'nama_kernet' => 'nullable|string|max:255',
             ]);
-            
+
             $driver = $request->user();
-            
+
             // 1. Get active check-in
             $activeCheckIn = DriverLogActivity::where('driver_id', $driver->id)
                 ->where('status', 'on_location')
@@ -132,14 +130,14 @@ class CheckOutApiController extends Controller
                 ->with('checkPoint')
                 ->latest()
                 ->first();
-            
+
             if (!$activeCheckIn) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Tidak ada check-in aktif.',
                 ], 404);
             }
-            
+
             // 2. Cek pending request
             $pendingRequest = DriverRequest::where('driver_id', $driver->id)
                 ->where('request_type', 'pemotongan')
@@ -157,33 +155,33 @@ class CheckOutApiController extends Controller
                     ],
                 ], 400);
             }
-            
+
             // 3. Get checkout checkpoint
             $checkoutCheckpoint = CheckPoint::find($request->checkout_checkpoint_id);
-            
+
             if (!$checkoutCheckpoint) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Checkpoint tidak ditemukan.',
                 ], 404);
             }
-            
+
             // 4. Get route cost dari BiayaRute
             $checkInCheckpointId = $activeCheckIn->check_point_id;
             $checkOutCheckpointId = $request->checkout_checkpoint_id;
-            
+
             // Get checkpoint names untuk fallback
             $checkInCheckpoint = CheckPoint::find($checkInCheckpointId);
             $checkOutCheckpoint = CheckPoint::find($checkOutCheckpointId);
-            
+
             // Log untuk debugging
             \Log::info("Looking for BiayaRute - From: $checkInCheckpointId ({$checkInCheckpoint->name}), To: $checkOutCheckpointId ({$checkOutCheckpoint->name})");
-            
+
             // Coba cari dengan ID string dulu
-            $biayaRute = BiayaRute::where('from', (string)$checkInCheckpointId)
-                ->where('to', (string)$checkOutCheckpointId)
+            $biayaRute = BiayaRute::where('from', (string) $checkInCheckpointId)
+                ->where('to', (string) $checkOutCheckpointId)
                 ->first();
-            
+
             // Jika tidak ketemu, coba cari dengan nama checkpoint
             if (!$biayaRute) {
                 \Log::info("BiayaRute not found with IDs, trying with names...");
@@ -191,17 +189,17 @@ class CheckOutApiController extends Controller
                     ->where('to', $checkOutCheckpoint->name)
                     ->first();
             }
-            
+
             // Log hasil query
             \Log::info("BiayaRute result: " . ($biayaRute ? "Found - Biaya: {$biayaRute->biaya}" : "Not found"));
-            
+
             if (!$biayaRute) {
                 return response()->json([
                     'success' => false,
                     'message' => "Biaya rute dari {$checkInCheckpoint->name} ke {$checkOutCheckpoint->name} tidak ditemukan. Hubungi admin.",
                 ], 400);
             }
-            
+
             // 5. Buat request pemotongan
             $checkoutData = [
                 'checkout_log_id' => $activeCheckIn->id,
@@ -240,7 +238,7 @@ class CheckOutApiController extends Controller
             ], 422);
         } catch (\Exception $e) {
             \Log::error('Error in requestCheckout: ' . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal request checkout: ' . $e->getMessage(),
@@ -255,14 +253,14 @@ class CheckOutApiController extends Controller
     {
         try {
             $driver = $request->user();
-            
+
             // Cek active check-in
             $activeCheckIn = DriverLogActivity::where('driver_id', $driver->id)
                 ->where('status', 'on_location')
                 ->whereNull('check_Out')
                 ->latest()
                 ->first();
-            
+
             if (!$activeCheckIn) {
                 return response()->json([
                     'success' => true,
@@ -272,7 +270,7 @@ class CheckOutApiController extends Controller
                     ],
                 ]);
             }
-            
+
             // Cek pending/rejected request untuk check-in ini
             $checkoutRequest = DriverRequest::where('driver_id', $driver->id)
                 ->where('request_type', 'pemotongan')
@@ -280,7 +278,7 @@ class CheckOutApiController extends Controller
                 ->whereIn('status', ['pending', 'rejected'])
                 ->latest()
                 ->first();
-            
+
             if (!$checkoutRequest) {
                 return response()->json([
                     'success' => true,
@@ -290,9 +288,9 @@ class CheckOutApiController extends Controller
                     ],
                 ]);
             }
-            
+
             $notes = json_decode($checkoutRequest->notes, true);
-            
+
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -305,7 +303,7 @@ class CheckOutApiController extends Controller
             ]);
         } catch (\Exception $e) {
             \Log::error('Error in getCheckoutStatus: ' . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal mendapatkan status checkout: ' . $e->getMessage(),

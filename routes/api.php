@@ -10,15 +10,14 @@ use App\Http\Controllers\Api\CheckOutApiController;
 use App\Http\Controllers\Api\LocationTrackingController;
 use App\Http\Controllers\AuthUserController;
 
-// Public routes (tidak perlu authentication)
+// Public routes
 Route::prefix('driver')->group(function () {
     Route::post('/login', [DriverAuthController::class, 'login']);
 });
 
-// Public checkpoint locations for admin map (session-based auth handled on web side)
 Route::get('/checkpoints/locations', [AuthUserController::class, 'getCheckpointLocations']);
 
-// Protected routes (perlu authentication token)
+// Protected routes
 Route::middleware('auth:sanctum')->prefix('driver')->group(function () {
     Route::get('/profile', [DriverAuthController::class, 'profile']);
     Route::post('/logout', [DriverAuthController::class, 'logout']);
@@ -29,13 +28,14 @@ Route::middleware('auth:sanctum')->prefix('driver')->group(function () {
     Route::post('/home/nearby-checkpoints', [HomeApiController::class, 'nearbyCheckpoints']);
     Route::post('/home/status/on', [HomeApiController::class, 'turnOnStatus']);
     Route::post('/home/status/off', [HomeApiController::class, 'turnOffStatus']);
-    Route::post('/home/status/end-maintenance', [HomeApiController::class, 'endMaintenance']);
+    // Removed: /home/status/end-maintenance (use /home/status/on instead)
     
     // Request Saldo routes
     Route::post('/request-saldo/top-up', [RequestSaldoController::class, 'topUp']);
     Route::get('/request-saldo/my-requests', [RequestSaldoController::class, 'myRequests']);
     
     // Check-in routes
+    Route::post('/check-in/checkpoints', [CheckInApiController::class, 'getAllCheckpoints']);
     Route::post('/check-in', [CheckInApiController::class, 'checkIn']);
     Route::get('/check-in/status', [CheckInApiController::class, 'getCurrentStatus']);
     
@@ -48,5 +48,4 @@ Route::middleware('auth:sanctum')->prefix('driver')->group(function () {
     // Location tracking routes
     Route::post('/location/update', [LocationTrackingController::class, 'updateLocation']);
     Route::get('/location/active', [LocationTrackingController::class, 'getActiveLocations']);
-    
 });
