@@ -434,19 +434,20 @@
             </div>
 
             <div class="tabs">
-                <div class="tab active">Semua</div>
-                <div class="tab">Check-Out Data</div>
+                <div class="tab active" id="tabAll">Semua</div>
+                <div class="tab" id="tabCheckout">Check-Out Data</div>
+                <div class="tab" id="tabCheckin">Check-In Data</div>
             </div>
 
             <div class="activity-list">
+                <div id="activityAll">
                 @foreach($logs as $log)
-                    <div class="activity-item">
+                    <div class="activity-item" data-checkout="{{ $log->last_activity === 'check_out' ? '1' : '0' }}">
                         <div class="activity-info">
                             <div class="activity-status"></div>
                             <div class="activity-details">
                                 <h4>{{ $log->driver?->unitTruck?->plate_number ?? '-' }}</h4>
                                 <p>{{ $log->driver->name ?? '-' }} • {{ $log->checkPoint->name ?? '-' }}</p>
-
                             </div>
                         </div>
                         <div style="display: flex; align-items: center;">
@@ -460,6 +461,7 @@
                         </div>
                     </div>
                 @endforeach
+                </div>
             </div>
         </div>
 
@@ -575,6 +577,47 @@
     @include('auth.partials.map-modal')
 
     <script src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_MAPS_API_KEY') }}"></script>
+        <script>
+            // Tab filter for activity list
+            document.addEventListener('DOMContentLoaded', function() {
+                const tabAll = document.getElementById('tabAll');
+                const tabCheckout = document.getElementById('tabCheckout');
+                const tabCheckin = document.getElementById('tabCheckin');
+                const activityAll = document.getElementById('activityAll');
+                function setTab(active) {
+                    tabAll.classList.remove('active');
+                    tabCheckout.classList.remove('active');
+                    tabCheckin.classList.remove('active');
+                    if (active === 'all') {
+                        tabAll.classList.add('active');
+                        Array.from(activityAll.children).forEach(item => {
+                            item.style.display = '';
+                        });
+                    } else if (active === 'checkout') {
+                        tabCheckout.classList.add('active');
+                        Array.from(activityAll.children).forEach(item => {
+                            if (item.getAttribute('data-checkout') === '1') {
+                                item.style.display = '';
+                            } else {
+                                item.style.display = 'none';
+                            }
+                        });
+                    } else if (active === 'checkin') {
+                        tabCheckin.classList.add('active');
+                        Array.from(activityAll.children).forEach(item => {
+                            if (item.getAttribute('data-checkout') === '0') {
+                                item.style.display = '';
+                            } else {
+                                item.style.display = 'none';
+                            }
+                        });
+                    }
+                }
+                tabAll.addEventListener('click', function() { setTab('all'); });
+                tabCheckout.addEventListener('click', function() { setTab('checkout'); });
+                tabCheckin.addEventListener('click', function() { setTab('checkin'); });
+            });
+        </script>
     <script>
         const darkMapStyles = [
             {
